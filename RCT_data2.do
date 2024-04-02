@@ -40,7 +40,9 @@ codebook female // Checking that it worked
 duplicates list unique_id, nolabel sepby(unique_id) // studenta 111541 and 123140 have repeated values
 browse unique_id age female race if unique_id == "111541" | unique_id == "123140"
 // Student 123140 has only repeated information, I'll drop one.
-// Student 111541 has very discrepant information, different rage, gender and age. As it is not possible to clarify data collection details, I'll just keep one line, with missing values for the variables, not to bias the analysis.
+// Student 111541 has very discrepant information, different rage, gender and age. As it is not
+// possible to clarify data collection details, I'll just keep one line, with missing values for
+// the variables, not to bias the analysis.
 duplicates drop unique_id, force
 replace age = . if unique_id == "111541"
 replace female = . if unique_id == "111541"
@@ -64,7 +66,8 @@ codebook
 * Checking for duplicate values
 duplicates list student_id variable, nolabel sepby(student_id) //  The Student 6296 has 2 ages
 browse value if student_id == 6296 & variable == "age" // The same person is recorded as being both 30 and 31 years old
-bysort student_id variable: keep if _n == _N // without further information, let's assume his age was recorded in 2 different years, and we will keep the most recent age (31)
+// without further information, let's assume his age was recorded in 2 different years, and we will keep the most recent age (31)
+bysort student_id variable: keep if _n == _N
 
 * Reshaping County 2 data from long to wide format
 reshape wide value, i(student_id) j(variable) string
@@ -133,7 +136,13 @@ drop if _merge == 2
 * Dropping unnecesary variables
 drop student_id male _merge
 
-* Creating a variable that indicates whether the observation is in the control, treatment norms or treatment information groups
+* Creating a dummy variable for applied, with 1 when the person applied and zero otherwise
+generate applied_dummy = cond(applied == 1, 1, 0)
+tab applied applied_dummy // confirming it worked
+
+* To analyze the efficacy of the separate treatments vs. control
+* Creating a variable that indicates whether the observation is in the control,
+* treatment norms or treatment information groups
 generate groups = cond(control_condition, 1, cond(info_condition, 2, 3))
 
 * testing to see if it worked
@@ -146,7 +155,9 @@ label define groups_label 1 "control" 2 "info" 3 "norms"
 label values groups groups_label
 codebook groups
 
-* Creating a dummy variable with value 1 if the observation was in the norms condition, and 0 otherwise, with the control variable coded as missing
+* To analyze the efficacy of the norms treatments vs. the information treatment
+* Creating a dummy variable with value 1 if the observation was in the norms condition,
+* and 0 otherwise, with the control variable coded as missing
 generate norms_over_info = cond(norms_condition, 1, cond(info_condition, 0, .))
 
 * testing to see if it worked
@@ -177,9 +188,8 @@ outreg2 using summary_table.doc, append //Add the new model to the regression Ta
 
 * Model 3: Treatment effect of norms over information (compares the norms treatment with the information treatment)
 regress applied norms_over_info, vce(robust)
-outreg2 using summary_table.doc, append
-//Add the new model to the regression Table
+outreg2 using summary_table.doc, append //Add the new model to the regression Table
 
 * Model 4: Adding demographic controls to model 3
 regress applied norms_over_info female age i.race, vce(robust)
-outreg2 using summary_table.doc, append
+outreg2 using summary_table.doc, append //Add the new model to the regression Table
